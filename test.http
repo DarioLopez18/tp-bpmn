@@ -1,0 +1,99 @@
+### 1️⃣ Caso Datos Válidos y Apto (flujo OK)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "123456",
+  "especialidad": "Cardiología",
+  "motivo": "Chequeo general"
+}
+
+### 2️⃣ Caso Datos Inválidos (Socio vacío)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "",
+  "especialidad": "Cardiología",
+  "motivo": "Chequeo general"
+}
+
+### 3️⃣ Caso No Apto - Socio con Deuda
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "999",
+  "especialidad": "Cardiología",
+  "motivo": "Chequeo general"
+}
+
+### 4️⃣ Caso No Apto - Especialidad No Cubierta
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "123456",
+  "especialidad": "Oncología",
+  "motivo": "Chequeo general"
+}
+
+### 5️⃣ Caso Datos Inválidos (Motivo vacío)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "123456",
+  "especialidad": "Cardiología",
+  "motivo": ""
+}
+
+### 6️⃣ Caso Datos Inválidos (Especialidad vacía)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "123456",
+  "especialidad": "",
+  "motivo": "Chequeo general"
+}
+
+### 7️⃣ Caso Socio inexistente
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "000",
+  "especialidad": "Cardiología",
+  "motivo": "Chequeo general"
+}
+
+### 8️⃣ Error técnico simulado (num_socio forza excepción en handlers)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "throw",
+  "especialidad": "Cardiología",
+  "motivo": "Chequeo general"
+}
+
+### 9️⃣ Error técnico en notificación (email inválido)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "888",
+  "especialidad": "Traumatología",
+  "motivo": "Chequeo general"
+}
+
+### 🔟 Turno duplicado (num_socio=111)
+POST http://localhost:8099/api/proceso/start
+Content-Type: application/json
+
+{
+  "num_socio": "111",
+  "especialidad": "Cardiología",
+  "motivo": "Chequeo general"
+}

@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+    xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0"
+    xmlns:color="http://www.omg.org/spec/BPMN/non-normative/color/1.0"
+    xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1hyepf8"
+    targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.35.0"
+    modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+    <bpmn:process id="validacion_datos_paciente_1" name="Validación de Datos de Paciente"
+        isExecutable="true">
+        <bpmn:exclusiveGateway id="gateway_datos_validos" name="¿Datos del Paciente Válidos?">
+            <bpmn:incoming>Flujo_A_DecisionDatos</bpmn:incoming>
+            <bpmn:outgoing>Flujo_DatosValidos</bpmn:outgoing>
+            <bpmn:outgoing>Flujo_DatosInvalidos</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:exclusiveGateway id="Gateway_0hyvprd" name="¿Hay turnos disponibles?">
+            <bpmn:incoming>Flow_1hto3lj</bpmn:incoming>
+            <bpmn:outgoing>FlujoNoDisponibilidad</bpmn:outgoing>
+            <bpmn:outgoing>Flow_1di3qo2</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:exclusiveGateway id="gateway_paciente_apto" name="¿Paciente Apto para Cobertura?">
+            <bpmn:incoming>Flujo_VerificarCobertura</bpmn:incoming>
+            <bpmn:outgoing>Flujo_Validacion_Rechazada</bpmn:outgoing>
+            <bpmn:outgoing>Flow_1mg2w30</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:serviceTask id="task_consultar_disponibilidad_turnos"
+            name="Consultar disponibilidad de turnos">
+            <bpmn:extensionElements>
+                <zeebe:taskDefinition type="ConsultarDisponibilidadTurnos" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flow_1mg2w30</bpmn:incoming>
+            <bpmn:outgoing>Flow_1hto3lj</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="end_datos_invalidos" name="Datos Invalidos">
+            <bpmn:incoming>Flujo_DatosInvalidos</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:boundaryEvent id="Event_0haqzbl" attachedToRef="task_consultar_disponibilidad_turnos">
+            <bpmn:outgoing>Flow_1xntrwe</bpmn:outgoing>
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_1lk5dty" errorRef="Error_1qp5cfv" />
+        </bpmn:boundaryEvent>
+        <bpmn:boundaryEvent id="Event_0qd54uy" attachedToRef="registrar_turno">
+            <bpmn:outgoing>Flow_117gx92</bpmn:outgoing>
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_0vbyqu0" errorRef="Error_08ce1yq" />
+        </bpmn:boundaryEvent>
+        <bpmn:sequenceFlow id="Flow_0cifnkm" sourceRef="registrar_turno" targetRef="Event_07s8pvh" />
+        <bpmn:sequenceFlow id="Flow_1hto3lj" sourceRef="task_consultar_disponibilidad_turnos"
+            targetRef="Gateway_0hyvprd" />
+        <bpmn:sequenceFlow id="Flujo_A_DecisionDatos" sourceRef="task_validar_datos_paciente"
+            targetRef="gateway_datos_validos" />
+        <bpmn:sequenceFlow id="Flujo_ValidarDatos" sourceRef="start_solicitud_recibida"
+            targetRef="task_validar_datos_paciente" />
+        <bpmn:sequenceFlow id="Flujo_VerificarCobertura"
+            sourceRef="task_verificar_cobertura_paciente" targetRef="gateway_paciente_apto" />
+        <bpmn:sequenceFlow id="Flujo_DatosInvalidos" name="No" sourceRef="gateway_datos_validos"
+            targetRef="end_datos_invalidos">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=datosValidos = false</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flujo_Validacion_Rechazada" name="No"
+            sourceRef="gateway_paciente_apto" targetRef="end_validacion_rechazada">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=apto = false</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="FlujoNoDisponibilidad" name="No" sourceRef="Gateway_0hyvprd"
+            targetRef="notificar_no_disponibilidad">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=turnoDisponible = false</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:endEvent id="notificar_no_disponibilidad" name="Notificar No disponibilidad">
+            <bpmn:extensionElements>
+                <zeebe:taskDefinition type="NotificarNoDisponibilidad" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>FlujoNoDisponibilidad</bpmn:incoming>
+            <bpmn:messageEventDefinition id="MessageEventDefinition_0sder85" />
+        </bpmn:endEvent>
+        <bpmn:serviceTask id="registrar_turno" name="Registrar Turno">
+            <bpmn:extensionElements>
+                <zeebe:taskDefinition type="RegistrarTurno" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flow_1di3qo2</bpmn:incoming>
+            <bpmn:outgoing>Flow_0cifnkm</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="Flujo_DatosValidos" name="Si" sourceRef="gateway_datos_validos"
+            targetRef="task_verificar_cobertura_paciente">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=datosValidos = true</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_1mg2w30" name="Si" sourceRef="gateway_paciente_apto"
+            targetRef="task_consultar_disponibilidad_turnos">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=apto = true</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="Flow_1di3qo2" name="Si" sourceRef="Gateway_0hyvprd"
+            targetRef="registrar_turno">
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=turnoDisponible = true</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:startEvent id="start_solicitud_recibida" name="Solicitud de Validacion Recibida">
+            <bpmn:outgoing>Flujo_ValidarDatos</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:endEvent id="Event_07s8pvh" name="Turno registrado">
+            <bpmn:incoming>Flow_0cifnkm</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="end_validacion_rechazada" name="Validacion Rechazada">
+            <bpmn:incoming>Flujo_Validacion_Rechazada</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:serviceTask id="task_validar_datos_paciente" name="Validar Datos del Paciente">
+            <bpmn:extensionElements>
+                <zeebe:taskDefinition type="validarDatosPaciente" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flujo_ValidarDatos</bpmn:incoming>
+            <bpmn:outgoing>Flujo_A_DecisionDatos</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="task_verificar_cobertura_paciente"
+            name="Verificar Cobertura del Paciente">
+            <bpmn:extensionElements>
+                <zeebe:taskDefinition type="verificarCoberturaPaciente" />
+            </bpmn:extensionElements>
+            <bpmn:incoming>Flujo_DatosValidos</bpmn:incoming>
+            <bpmn:outgoing>Flujo_VerificarCobertura</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="Event_0c5d611">
+            <bpmn:incoming>Flow_1xntrwe</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_1xntrwe" name="Error en la disponibilidad"
+            sourceRef="Event_0haqzbl" targetRef="Event_0c5d611" />
+        <bpmn:endEvent id="Event_0vvsndi" name="Error al registrar turno">
+            <bpmn:incoming>Flow_117gx92</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_117gx92" sourceRef="Event_0qd54uy" targetRef="Event_0vvsndi" />
+    </bpmn:process>
+    <bpmn:error id="Error_1qp5cfv" name="SinTurno" errorCode="sin_turno" />
+    <bpmn:error id="Error_08ce1yq" name="TurnoDuplicado" errorCode="turno_duplicado" />
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="validacion_datos_paciente_1">
+            <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="start_solicitud_recibida"
+                bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9"
+                color:border-color="#205022">
+                <dc:Bounds x="182" y="102" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="176" y="145" width="57" height="40" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Gateway_18cgqi2_di" bpmnElement="gateway_datos_validos"
+                isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2"
+                color:background-color="#ffe0b2" color:border-color="#6b3c00">
+                <dc:Bounds x="425" y="95" width="50" height="50" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="407" y="65" width="89" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_18hgwsg_di" bpmnElement="end_datos_invalidos"
+                bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2"
+                color:border-color="#831311">
+                <dc:Bounds x="532" y="212" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="513" y="255" width="76" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Gateway_1q64gnn_di" bpmnElement="gateway_paciente_apto"
+                isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2"
+                color:background-color="#ffe0b2" color:border-color="#6b3c00">
+                <dc:Bounds x="685" y="95" width="50" height="50" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="672" y="65" width="81" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_1r318gt_di" bpmnElement="task_validar_datos_paciente"
+                bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb"
+                color:border-color="#0d4372">
+                <dc:Bounds x="270" y="80" width="100" height="80" />
+                <bpmndi:BPMNLabel />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_1dcyl2z_di"
+                bpmnElement="task_verificar_cobertura_paciente" bioc:stroke="#0d4372"
+                bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+                <dc:Bounds x="530" y="80" width="100" height="80" />
+                <bpmndi:BPMNLabel />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_0e9qtxx_di" bpmnElement="end_validacion_rechazada"
+                bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2"
+                color:border-color="#831311">
+                <dc:Bounds x="792" y="212" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="782" y="255" width="56" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_0umx8k8_di"
+                bpmnElement="task_consultar_disponibilidad_turnos" bioc:stroke="#0d4372"
+                bioc:fill="#bbdefb" color:background-color="#bbdefb" color:border-color="#0d4372">
+                <dc:Bounds x="870" y="80" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="BPMNShape_12zq2ta" bpmnElement="Gateway_0hyvprd"
+                isMarkerVisible="true" bioc:stroke="#6b3c00" bioc:fill="#ffe0b2"
+                color:background-color="#ffe0b2" color:border-color="#6b3c00">
+                <dc:Bounds x="1085" y="95" width="50" height="50" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="1082" y="65" width="62" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_1wrd8wn_di" bpmnElement="registrar_turno"
+                bioc:stroke="#0d4372" bioc:fill="#bbdefb" color:background-color="#bbdefb"
+                color:border-color="#0d4372">
+                <dc:Bounds x="1280" y="80" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_07s8pvh_di" bpmnElement="Event_07s8pvh"
+                bioc:stroke="#205022" bioc:fill="#c8e6c9" color:background-color="#c8e6c9"
+                color:border-color="#205022">
+                <dc:Bounds x="1482" y="102" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="1461" y="145" width="81" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_1fad30z_di" bpmnElement="notificar_no_disponibilidad"
+                bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2"
+                color:border-color="#831311">
+                <dc:Bounds x="1202" y="212" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="1189" y="255" width="67" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_0c5d611_di" bpmnElement="Event_0c5d611"
+                bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2"
+                color:border-color="#831311">
+                <dc:Bounds x="1042" y="222" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_0vvsndi_di" bpmnElement="Event_0vvsndi"
+                bioc:stroke="#831311" bioc:fill="#ffcdd2" color:background-color="#ffcdd2"
+                color:border-color="#831311">
+                <dc:Bounds x="1452" y="222" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="1432" y="265" width="80" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_0haqzbl_di" bpmnElement="Event_0haqzbl">
+                <dc:Bounds x="952" y="142" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_0qd54uy_di" bpmnElement="Event_0qd54uy">
+                <dc:Bounds x="1362" y="142" width="36" height="36" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNEdge id="Flow_1fjjrgh_di" bpmnElement="Flujo_ValidarDatos">
+                <di:waypoint x="218" y="120" />
+                <di:waypoint x="270" y="120" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="200" y="102" width="88" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_16zbwsz_di" bpmnElement="Flujo_A_DecisionDatos">
+                <di:waypoint x="370" y="120" />
+                <di:waypoint x="425" y="120" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_195j5zc_di" bpmnElement="Flujo_DatosValidos">
+                <di:waypoint x="475" y="120" />
+                <di:waypoint x="530" y="120" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="498" y="102" width="10" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_171ndsj_di" bpmnElement="Flujo_DatosInvalidos">
+                <di:waypoint x="450" y="145" />
+                <di:waypoint x="450" y="230" />
+                <di:waypoint x="532" y="230" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="458" y="185" width="15" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_0txb704_di" bpmnElement="Flujo_VerificarCobertura">
+                <di:waypoint x="630" y="120" />
+                <di:waypoint x="685" y="120" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_0orc24u_di" bpmnElement="Flujo_Validacion_Rechazada">
+                <di:waypoint x="710" y="145" />
+                <di:waypoint x="710" y="230" />
+                <di:waypoint x="792" y="230" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="718" y="185" width="15" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1mg2w30_di" bpmnElement="Flow_1mg2w30">
+                <di:waypoint x="735" y="120" />
+                <di:waypoint x="870" y="120" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="798" y="102" width="10" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1hto3lj_di" bpmnElement="Flow_1hto3lj">
+                <di:waypoint x="970" y="120" />
+                <di:waypoint x="1085" y="120" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1lgvbso_di" bpmnElement="FlujoNoDisponibilidad">
+                <di:waypoint x="1110" y="145" />
+                <di:waypoint x="1110" y="230" />
+                <di:waypoint x="1202" y="230" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="1118" y="185" width="15" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1di3qo2_di" bpmnElement="Flow_1di3qo2">
+                <di:waypoint x="1135" y="120" />
+                <di:waypoint x="1280" y="120" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="1203" y="102" width="10" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_0cifnkm_di" bpmnElement="Flow_0cifnkm">
+                <di:waypoint x="1380" y="120" />
+                <di:waypoint x="1482" y="120" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1xntrwe_di" bpmnElement="Flow_1xntrwe">
+                <di:waypoint x="970" y="178" />
+                <di:waypoint x="970" y="240" />
+                <di:waypoint x="1042" y="240" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="955" y="206" width="67" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_117gx92_di" bpmnElement="Flow_117gx92">
+                <di:waypoint x="1380" y="178" />
+                <di:waypoint x="1380" y="240" />
+                <di:waypoint x="1452" y="240" />
+            </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>
